@@ -47,7 +47,7 @@ export type PrintLabels = Record<'scene' | 'shot' | 'frame' | 'size' | 'angle' |
   hide?: string[] // columns left out: frame, size, angle, move, lens, cast, duration, notes
 }
 
-export type MenuCommand = 'new' | 'import' | 'export-pdf' | 'export-board' | 'export-html' | 'export-file' | 'add-scene' | 'add-shot'
+export type MenuCommand = 'new' | 'import' | 'export-pdf' | 'export-board' | 'export-html' | 'export-file' | 'add-scene' | 'add-shot' | 'settings'
 
 export interface ListApi {
   platform: string // darwin, win32… or 'web'

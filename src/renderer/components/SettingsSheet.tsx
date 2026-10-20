@@ -1,66 +1,90 @@
-// Settings: account, appearance (light/dark, colour, corners, text), language, defaults for new lists,
-// the list's columns, PDF, behaviour, about. Opens as a sheet with sections on the left.
+// Settings, laid out like RoarMe's: pages in groups on the left (the chosen one lit by the lens), each page with a hero
+// line and boxes of rows. Appearance carries RoarMe's look settings; the rest is RoarList's own.
 import { useState } from 'react'
 import { isWeb } from '../api'
 import { sb, user } from '../cloud'
 import { ASPECTS, t } from '../i18n'
-import { ACCENTS, COLUMNS, set, type Settings } from '../settings'
+import { ACCENTS, COLUMNS, FONTS, THEMES, TEXT_SIZES, revealFrom, set, type Settings } from '../settings'
+import { Lens } from '../ui'
 import { useSettings } from '../useSettings'
 import { authError } from './Auth'
 import { Icon } from './Icon'
 
-const VERSION = '0.3.0'
-type Section = 'account' | 'appearance' | 'lists' | 'pdf' | 'about'
+const VERSION = '0.4.0'
+type Page = 'account' | 'general' | 'appearance' | 'language' | 'lists' | 'pdf' | 'keys'
 
-export function SettingsSheet({ onClose }: { onClose: () => void }) {
+// [id, title, colour, icon, hero line, group]
+const PAGES = (): [Page, string, string, string, string, number][] => [
+  ['account', t.account, '#0a84ff', 'user', t.heroAccount, 1],
+  ['general', t.general, '#8e8e93', 'gear', t.heroGeneral, 1],
+  ['appearance', t.appearance, '#40c8e0', 'sun', t.heroAppearance, 1],
+  ['language', t.language, '#bf5af2', 'globe', t.heroLanguage, 1],
+  ['lists', t.defaults, '#ff9f0a', 'list', t.heroLists, 2],
+  ['pdf', t.pdf, '#ff453a', 'download', t.heroPdf, 2],
+  ['keys', t.keys, '#30d158', 'keyboard', t.heroKeys, 2],
+]
+
+export function SettingsSheet({ onClose, start = 'appearance' }: { onClose: () => void; start?: Page }) {
   const s = useSettings()
-  const [sec, setSec] = useState<Section>('appearance')
-  const nav: [Section, string, string][] = [
-    ['account', t.account, 'user'], ['appearance', t.appearance, 'sun'], ['lists', t.defaults, 'list'], ['pdf', t.pdf, 'download'], ['about', t.about, 'clapper'],
-  ]
+  const [page, setPage] = useState<Page>(start)
+  const pages = PAGES()
+  const cur = pages.find((x) => x[0] === page)!
   return (
     <div className="sheet-wrap" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div className="sheet settings" role="dialog" aria-label={t.settings}>
-        <nav className="set-nav">
+        <div className="set-side">
           <h2>{t.settings}</h2>
-          {nav.map(([k, label, icon]) => (
-            <button key={k} className={sec === k ? 'on' : ''} onClick={() => setSec(k)}><Icon name={icon} size={17} />{label}</button>
-          ))}
-        </nav>
+          <Lens className="set-nav" dep={page}>
+            {pages.map(([k, label, , icon, , group], i) => [
+              i > 0 && pages[i - 1][5] !== group ? <div key={`g${k}`} className="nav-group" /> : null,
+              <button key={k} className={page === k ? 'on' : ''} onClick={() => setPage(k)}><Icon name={icon} size={17} />{label}</button>,
+            ])}
+          </Lens>
+          <div className="set-version"><div className="brand"><b>ROAR</b><i>LIST</i></div>by THEMADLIONS · {VERSION}{isWeb ? ' web' : ''}</div>
+        </div>
         <div className="set-body">
           <button className="tool set-close" title={t.close} onClick={onClose}><Icon name="close" size={18} /></button>
-          {sec === 'account' && <Account />}
-          {sec === 'appearance' && <Appearance s={s} />}
-          {sec === 'lists' && <Lists s={s} />}
-          {sec === 'pdf' && <Pdf s={s} />}
-          {sec === 'about' && (
-            <section>
-              <h3>{t.about}</h3>
-              <div className="brand big"><b>ROAR</b><i>LIST</i></div>
-              <p className="muted">TheMadlions Lab · Experiment 04</p>
-              <Row label={t.version}><span>{VERSION}{isWeb ? ' · web' : ''}</span></Row>
-            </section>
-          )}
+          <section key={page}>
+            <h3>{cur[1]}</h3>
+            <div className="set-hero" style={{ '--c': cur[2] } as React.CSSProperties}><i><Icon name={cur[3]} size={26} /></i><p>{cur[4]}</p></div>
+            {page === 'account' && <Account />}
+            {page === 'general' && <General s={s} />}
+            {page === 'appearance' && <Appearance s={s} />}
+            {page === 'language' && <Language s={s} />}
+            {page === 'lists' && <Lists s={s} />}
+            {page === 'pdf' && <Pdf s={s} />}
+            {page === 'keys' && <Keys />}
+          </section>
         </div>
       </div>
     </div>
   )
 }
 
-function Row({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Box({ title, note, children }: { title?: string; note?: string; children: React.ReactNode }) {
+  return (
+    <>
+      {title && <h4>{title}</h4>}
+      <div className="set-box">{children}</div>
+      {note && <p className="set-note">{note}</p>}
+    </>
+  )
+}
+
+function Row({ label, hint, children }: { label: string; hint?: string; children?: React.ReactNode }) {
   return (
     <div className="set-row">
       <div className="grow"><div>{label}</div>{hint && <div className="muted small">{hint}</div>}</div>
-      <div className="set-ctl">{children}</div>
+      {children && <div className="set-ctl">{children}</div>}
     </div>
   )
 }
 
-function Seg<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+function Seg<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T, e: React.MouseEvent) => void }) {
   return (
-    <div className="seg">
-      {options.map(([v, label]) => <button key={v} className={value === v ? 'on' : ''} onClick={() => onChange(v)}>{label}</button>)}
-    </div>
+    <Lens className="seg" dep={value}>
+      {options.map(([v, label]) => <button key={v} className={value === v ? 'on' : ''} onClick={(e) => onChange(v, e)}>{label}</button>)}
+    </Lens>
   )
 }
 
@@ -68,92 +92,168 @@ function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
   return <label className="switch"><input type="checkbox" checked={on} onChange={(e) => onChange(e.target.checked)} /><span /></label>
 }
 
-function Appearance({ s }: { s: Settings }) {
+function General({ s }: { s: Settings }) {
   return (
-    <section>
-      <h3>{t.appearance}</h3>
-      <Row label={t.mode}>
-        <Seg value={s.mode} options={[['dark', t.modeDark], ['light', t.modeLight], ['system', t.modeSystem]]} onChange={(mode) => set({ mode })} />
-      </Row>
-      <Row label={t.accent}>
-        <div className="swatches">
-          {ACCENTS.map(([k, hex]) => (
-            <button key={k} className={`swatch${s.accent === k ? ' on' : ''}`} style={{ background: hex }} title={k} onClick={() => set({ accent: k })} />
-          ))}
+    <>
+      <Box title={t.behaviour}>
+        <Row label={t.confirmDelete} hint={t.confirmDeleteHint}><Switch on={s.confirmDelete} onChange={(confirmDelete) => set({ confirmDelete })} /></Row>
+      </Box>
+      <Box title={t.battery} note={t.liteHint}>
+        <Row label={t.lite}><Switch on={s.lite} onChange={(lite) => set({ lite })} /></Row>
+      </Box>
+      <Box>
+        <Row label={t.resetAll} hint={t.resetHint}>
+          <button className="pill small danger-text" onClick={() => { if (confirm(t.resetQ)) set(null) }}>{t.reset}</button>
+        </Row>
+      </Box>
+    </>
+  )
+}
+
+function Appearance({ s }: { s: Settings }) {
+  const themeName = THEMES.find(([k]) => k === s.theme)?.[1]
+  return (
+    <>
+      <div className="set-preview">
+        <div className="pv-frame" />
+        <div className="pv-text">
+          <b>1A · {themeName}</b>
+          <span className="muted small">{t.previewLine}</span>
+          <div className="pv-tags"><span className="on">WS</span><span>Drone</span><span>24mm</span></div>
         </div>
-      </Row>
-      <Row label={t.radius}>
-        <input type="range" min={4} max={16} value={s.radius} onChange={(e) => set({ radius: Number(e.target.value) })} />
-        <span className="muted small num">{s.radius}px</span>
-      </Row>
-      <Row label={t.textSize}>
-        <Seg value={s.textSize} options={[['small', t.small], ['standard', t.standard], ['large', t.large]]} onChange={(textSize) => set({ textSize })} />
-      </Row>
+      </div>
+      <Box title={t.theme}>
+        <div className="set-row">
+          <div className="themes">
+            {THEMES.map(([k, name, accent, bg]) => (
+              <button key={k} className={`theme-tile${s.theme === k ? ' on' : ''}`} onClick={(e) => revealFrom(e, () => set({ theme: k }))}>
+                <span className="sw" style={{ background: bg }}><b /><i style={{ background: accent }} /></span>{name}
+              </button>
+            ))}
+          </div>
+        </div>
+        <Row label={t.mode}>
+          <Seg value={s.mode} options={[['dark', t.modeDark], ['light', t.modeLight], ['auto', t.modeSystem]]} onChange={(mode, e) => revealFrom(e, () => set({ mode }))} />
+        </Row>
+        <Row label={t.accent}>
+          <div className="swatches">
+            <button className={`swatch theme-own${s.accent === '' ? ' on' : ''}`} title={t.themeOwn} onClick={() => set({ accent: '' })} />
+            {ACCENTS.map(([k, hex]) => (
+              <button key={k} className={`swatch${s.accent === k ? ' on' : ''}`} style={{ background: hex }} title={k} onClick={() => set({ accent: k })} />
+            ))}
+          </div>
+        </Row>
+      </Box>
+      <Box title={t.text}>
+        <Row label={t.textSize}>
+          <span className="muted small">A</span>
+          <input type="range" min={0} max={TEXT_SIZES.length - 1} value={s.textSize} onChange={(e) => set({ textSize: Number(e.target.value) })} />
+          <span className="muted">A</span>
+        </Row>
+        <Row label={t.font}>
+          <select className="set-select" value={s.font} onChange={(e) => set({ font: e.target.value })}>
+            {FONTS.map(([k, name, stack]) => <option key={k} value={k} style={{ fontFamily: stack }}>{name}</option>)}
+          </select>
+        </Row>
+      </Box>
+      <Box title={t.layout}>
+        <Row label={t.spacing}>
+          <Seg value={s.density} options={[['tight', t.tight], ['standard', t.standard], ['relaxed', t.relaxed]]} onChange={(density) => set({ density })} />
+        </Row>
+        <Row label={t.radius}>
+          <input type="range" min={4} max={16} step={2} value={s.radius} onChange={(e) => set({ radius: Number(e.target.value) })} />
+          <span className="muted small num">{s.radius}px</span>
+        </Row>
+      </Box>
+      <Box title={t.effects}>
+        <Row label={t.glassLook} hint={t.glassHint}><Switch on={s.glass} onChange={(glass) => set({ glass })} /></Row>
+        <Row label={t.motion}><Switch on={s.motion} onChange={(motion) => set({ motion })} /></Row>
+        <Row label={t.focusRings} hint={t.focusHint}><Switch on={s.focusRings} onChange={(focusRings) => set({ focusRings })} /></Row>
+      </Box>
+    </>
+  )
+}
+
+function Language({ s }: { s: Settings }) {
+  return (
+    <Box title={t.interface} note={t.langNote}>
       <Row label={t.language}>
         <Seg value={s.language} options={[['el', 'Ελληνικά'], ['en', 'English'], ['system', t.langSystem]]} onChange={(language) => set({ language })} />
       </Row>
-    </section>
+    </Box>
   )
 }
 
 function Lists({ s }: { s: Settings }) {
   const label: Record<string, string> = { frame: t.frame, size: t.size, angle: t.angle, move: t.move, lens: t.lens, cast: t.cast, duration: t.duration, notes: t.notes }
   return (
-    <section>
-      <h3>{t.defaults}</h3>
-      <Row label={t.defAspect}>
-        <select className="set-select" value={s.aspect} onChange={(e) => set({ aspect: e.target.value })}>
-          {ASPECTS.map((a) => <option key={a}>{a}</option>)}
-        </select>
-      </Row>
-      <Row label={t.defLens}>
-        <input className="set-input" value={s.lens} placeholder="35mm" onChange={(e) => set({ lens: e.target.value })} />
-      </Row>
-      <h3>{t.columns}</h3>
-      <p className="muted small">{t.columnsHint}</p>
-      {COLUMNS.map((c) => (
-        <Row key={c} label={label[c]}>
-          <Switch on={s.columns[c] !== false} onChange={(v) => set({ columns: { ...s.columns, [c]: v } })} />
+    <>
+      <Box title={t.newLists}>
+        <Row label={t.defAspect}>
+          <select className="set-select" value={s.aspect} onChange={(e) => set({ aspect: e.target.value })}>
+            {ASPECTS.map((a) => <option key={a}>{a}</option>)}
+          </select>
         </Row>
-      ))}
-      <h3>{t.behaviour}</h3>
-      <Row label={t.confirmDelete}><Switch on={s.confirmDelete} onChange={(confirmDelete) => set({ confirmDelete })} /></Row>
-    </section>
+        <Row label={t.defLens}>
+          <input className="set-input" value={s.lens} placeholder="35mm" onChange={(e) => set({ lens: e.target.value })} />
+        </Row>
+      </Box>
+      <Box title={t.columns} note={t.columnsHint}>
+        {COLUMNS.map((c) => (
+          <Row key={c} label={label[c]}>
+            <Switch on={s.columns[c] !== false} onChange={(v) => set({ columns: { ...s.columns, [c]: v } })} />
+          </Row>
+        ))}
+      </Box>
+    </>
   )
 }
 
 function Pdf({ s }: { s: Settings }) {
   return (
-    <section>
-      <h3>{t.pdf}</h3>
+    <Box title={t.printing}>
       <Row label={t.paper}><Seg value={s.paper} options={[['A4', 'A4'], ['Letter', 'Letter']]} onChange={(paper) => set({ paper })} /></Row>
       <Row label={t.pdfFrames}><Switch on={s.pdfFrames} onChange={(pdfFrames) => set({ pdfFrames })} /></Row>
-    </section>
+    </Box>
   )
+}
+
+const mod = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
+function Keys() {
+  const rows: [string, string][] = [
+    [`${mod} K`, t.k_search], [`${mod} N`, t.k_new], [`${mod} ↵`, t.k_shot], [`${mod} ⇧ ↵`, t.k_scene], [`${mod} P`, t.k_pdf],
+    [`${mod} ⇧ P`, t.k_board], [`${mod} Z`, t.k_undo], [`${mod} ,`, t.k_settings], [`${mod} /`, t.k_keys], ['Esc', t.k_esc],
+    [t.k_paste, t.k_pasteWhat], [t.k_right, t.k_rightWhat],
+  ]
+  return <div className="set-box"><div className="set-row"><div className="keys">{rows.map(([k, v]) => [<kbd key={k}>{k}</kbd>, <span key={v}>{v}</span>])}</div></div></div>
 }
 
 function Account() {
   const u = user()
   const [pw, setPw] = useState('')
   const [msg, setMsg] = useState('')
-  if (!isWeb || !u) return <section><h3>{t.account}</h3><p className="muted">{t.localNote}</p></section>
+  if (!isWeb || !u) return <Box note={t.localNote}><Row label={t.account} hint={t.desktopAccount} /></Box>
+  const name = (u.user_metadata as any)?.name
   return (
-    <section>
-      <h3>{t.account}</h3>
-      <Row label={t.signedInAs}><span className="ellipsis">{(u.user_metadata as any)?.name ? `${(u.user_metadata as any).name} · ` : ''}{u.email}</span></Row>
-      <p className="muted small">{t.cloudNote}</p>
-      <h3>{t.changePassword}</h3>
-      <form className="row" onSubmit={async (e) => {
-        e.preventDefault()
-        const { error } = await sb.auth.updateUser({ password: pw })
-        setMsg(error ? authError(error) : t.passwordSaved)
-        if (!error) setPw('')
-      }}>
-        <input className="set-input grow" type="password" autoComplete="new-password" placeholder={t.newPassword} value={pw} onChange={(e) => setPw(e.target.value)} />
-        <button className="pill" type="submit" disabled={pw.length < 6}>{t.save}</button>
-      </form>
-      {msg && <p className="msg">{msg}</p>}
-      <button className="pill danger" onClick={() => sb.auth.signOut()}><Icon name="close" size={16} />{t.signOut}</button>
-    </section>
+    <>
+      <Box note={t.cloudNote}>
+        <Row label={name || u.email || ''} hint={name ? u.email : t.signedInAs} />
+      </Box>
+      <Box title={t.changePassword}>
+        <form className="set-row" onSubmit={async (e) => {
+          e.preventDefault()
+          const { error } = await sb.auth.updateUser({ password: pw })
+          setMsg(error ? authError(error) : t.passwordSaved)
+          if (!error) setPw('')
+        }}>
+          <input className="set-input grow" type="password" autoComplete="new-password" placeholder={t.newPassword} value={pw} onChange={(e) => setPw(e.target.value)} />
+          <button className="pill small" type="submit" disabled={pw.length < 6}>{t.save}</button>
+        </form>
+      </Box>
+      {msg && <p className="set-note">{msg}</p>}
+      <Box>
+        <button className="set-row danger-row" onClick={() => sb.auth.signOut()}><Icon name="close" size={16} />{t.signOut}</button>
+      </Box>
+    </>
   )
 }

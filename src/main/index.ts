@@ -157,7 +157,15 @@ app.whenReady().then(() => {
 
   const mac = process.platform === 'darwin'
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    ...(mac ? [{ role: 'appMenu' as const }] : []),
+    ...(mac ? [{
+      label: 'RoarList',
+      submenu: [
+        { role: 'about' as const }, { type: 'separator' as const },
+        { label: 'Settings…', accelerator: 'Cmd+,', click: () => menu('settings') },
+        { type: 'separator' as const }, { role: 'hide' as const }, { role: 'hideOthers' as const }, { role: 'unhide' as const },
+        { type: 'separator' as const }, { role: 'quit' as const },
+      ],
+    }] : []),
     {
       label: 'File',
       submenu: [
@@ -169,6 +177,7 @@ app.whenReady().then(() => {
         { label: 'Export Web Page…', click: () => menu('export-html') },
         { label: 'Save as .roarlist…', accelerator: 'CmdOrCtrl+Shift+S', click: () => menu('export-file') },
         { type: 'separator' },
+        ...(mac ? [] : [{ label: 'Settings…', accelerator: 'Ctrl+,', click: () => menu('settings') }, { type: 'separator' as const }]),
         mac ? { role: 'close' as const } : { role: 'quit' as const },
       ],
     },

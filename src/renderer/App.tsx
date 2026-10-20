@@ -12,6 +12,7 @@ import { Auth, NewPassword } from './components/Auth'
 import { SettingsSheet } from './components/SettingsSheet'
 import { currentSession, onAuth, uid } from './cloud'
 import * as S from './settings'
+import { Lens } from './ui'
 import { importLegacy, loadAccountSettings, saveAccountSettings } from './web-api'
 import { ShotList } from './components/ShotList'
 
@@ -33,6 +34,7 @@ type Toast = { text: string; undo?: boolean } | null
 // after React has drawn the new row: its description field
 const later = (fn: () => void) => setTimeout(fn, 0)
 const focusShot = (id: string) => later(() => {
+  document.querySelector(`[data-shot="${id}"]`)?.classList.add('fresh')
   const row = document.querySelector(`[data-shot="${id}"]`)
   ;(row?.querySelector<HTMLElement>('textarea') || row?.querySelector<HTMLElement>('input:not([type=checkbox])'))?.focus()
 })
@@ -43,7 +45,11 @@ export default function App() {
   const [view, setView] = useState<PrintMode>(() => (localStorage.getItem('view') as PrintMode) || 'list')
   const [menu, setMenu] = useState(false)
   const [sideOpen, setSideOpen] = useState(false)
-  const [settings, setSettings] = useState(false)
+  const [settings, setSettings] = useState<false | 'appearance' | 'keys'>(false)
+  const [intro, setIntro] = useState(true)
+  const [query, setQuery] = useState('')
+  const [ctx, setCtx] = useState<{ id: string; x: number; y: number } | null>(null)
+  const [sideW, setSideW] = useState(() => { try { return Number(localStorage.getItem('roarlist-side')) || 270 } catch { return 270 } })
   const [authed, setAuthed] = useState<boolean | null>(null)
   const [recovery, setRecovery] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
@@ -246,6 +252,7 @@ export default function App() {
     else if (c === 'export-html') exportAs('html')
     else if (c === 'export-file') exportAs('file')
     else if (c === 'add-scene') o.addScene()
+    else if (c === 'settings') setSettings('appearance')
     else if (c === 'add-shot') {
       if (active.current && sc?.some((x) => x.shots.some((s) => s.id === active.current))) o.addShotAfter(active.current)
       else if (sc?.length) o.addShot(sc[sc.length - 1].id)
@@ -258,7 +265,10 @@ export default function App() {
     const typing = () => /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') && (document.activeElement as HTMLInputElement).type !== 'checkbox'
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing()) { e.preventDefault(); undo() }
-      if (e.key === 'Escape') setMenu(false)
+      if (e.key === 'Escape') { setMenu(false); setCtx(null) }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSideOpen(true); later(() => document.querySelector<HTMLInputElement>('.side-search input')?.focus()) }
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); setSettings('appearance') }
+      if ((e.metaKey || e.ctrlKey) && e.key === '/') { e.preventDefault(); setSettings('keys') }
       if (isWeb && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); exportRef.current(e.shiftKey ? 'board' : 'pdf') }
     }
     const paste = (e: ClipboardEvent) => {
@@ -271,26 +281,62 @@ export default function App() {
   }, [undo])
 
   useEffect(() => { localStorage.setItem('view', view) }, [view])
+  // RoarMe's opening: the side slides in and the page rises, only the first moment
+  useEffect(() => { const id = setTimeout(() => setIntro(false), 1400); return () => clearTimeout(id) }, [])
+
+  // the side panel's edge drags its width (370-720 in RoarMe; 220-480 here), a double click puts it back
+  const grip = (e: React.PointerEvent) => {
+    e.preventDefault()
+    const x0 = e.clientX, w0 = sideW
+    document.body.classList.add('resizing')
+    const move = (ev: PointerEvent) => setSideW(Math.round(Math.min(480, Math.max(220, w0 + ev.clientX - x0))))
+    const up = () => {
+      document.body.classList.remove('resizing')
+      window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up)
+      setSideW((w) => { try { localStorage.setItem('roarlist-side', String(w)) } catch { /* private */ } return w })
+    }
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+  }
+
+  const duplicate = async (id: string, title: string) => {
+    await flush()
+    const n = await api.duplicate(id, `${t.copyOf} ${title || t.untitled}`)
+    await refresh(); open(n.id)
+  }
+  const removeList = async (id: string) => {
+    if (!confirm(t.removeQ)) return
+    if (cur.current?.id === id) { clearTimeout(timer.current); dirty.current = false; cur.current = null; setP(null) }
+    await api.remove(id); await refresh()
+  }
 
   if (isWeb && authed === false) return <Auth />
   if (!lists) return <div className="boot"><div className="spinner" /></div>
 
   const tot = p ? totals(p) : null
+  const q = query.trim().toLowerCase()
+  const shown = q ? lists.filter((x) => (x.title || t.untitled).toLowerCase().includes(q)) : lists
+  const ctxList = ctx && lists.find((x) => x.id === ctx.id)
   const field = (k: 'client' | 'director' | 'dop', label: string) => (
     <label className="meta-field"><span>{label}</span><input value={p![k]} onChange={(e) => edit((x) => ({ ...x, [k]: e.target.value }))} /></label>
   )
 
   return (
-    <div className={`app${sideOpen ? ' side-open' : ''}`}>
+    <div className={`app${sideOpen ? ' side-open' : ''}${intro ? ' intro' : ''}`} style={{ '--side-w': `${sideW}px` } as React.CSSProperties}>
       <div className="drag" />
       {sideOpen && <div className="side-shade" onClick={() => setSideOpen(false)} />}
       <aside className="side">
         <div className="brand"><b>ROAR</b><i>LIST</i></div>
         <button className="pill primary new" onClick={() => { setSideOpen(false); create() }}><Icon name="plus" size={16} />{t.newList}</button>
+        <label className="side-search"><Icon name="search" size={15} />
+          <input value={query} placeholder={t.searchPh} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setQuery(''); (e.target as HTMLInputElement).blur() } }} />
+          {!query && <kbd>{/Mac/.test(navigator.platform) ? '⌘' : 'Ctrl'} K</kbd>}
+        </label>
         <div className="side-title muted small">{t.shotlists}</div>
-        <div className="projects">
-          {lists.map((x) => (
-            <div key={x.id} className={`project${p?.id === x.id ? ' on' : ''}`} onClick={() => { setSideOpen(false); if (p?.id !== x.id) open(x.id) }}>
+        <div className="projects" key={query ? 'q' : 'all'}>
+          {query && !shown.length && <div className="muted small side-empty">{t.noMatch}</div>}
+          {shown.map((x) => (
+            <div key={x.id} className={`project${p?.id === x.id ? ' on' : ''}`} onClick={() => { setSideOpen(false); if (p?.id !== x.id) open(x.id) }}
+              onContextMenu={(e) => { e.preventDefault(); setCtx({ id: x.id, x: Math.min(e.clientX, innerWidth - 230), y: Math.min(e.clientY, innerHeight - 260) }) }}>
               <div className="cover">{x.cover ? <Img projectId={x.id} file={x.cover} /> : <Icon name="clapper" size={18} />}</div>
               <div className="grow">
                 <div className="ellipsis">{(p?.id === x.id ? p.title : x.title) || t.untitled}</div>
@@ -299,25 +345,17 @@ export default function App() {
                 </div>
               </div>
               <div className="project-tools">
-                <button className="tool small" title={t.duplicate} onClick={async (e) => {
-                  e.stopPropagation(); await flush()
-                  const n = await api.duplicate(x.id, `${t.copyOf} ${x.title || t.untitled}`)
-                  await refresh(); open(n.id)
-                }}><Icon name="copy" size={15} /></button>
-                <button className="tool small" title={t.remove} onClick={async (e) => {
-                  e.stopPropagation()
-                  if (!confirm(t.removeQ)) return
-                  if (p?.id === x.id) { clearTimeout(timer.current); dirty.current = false; cur.current = null; setP(null) }
-                  await api.remove(x.id); await refresh()
-                }}><Icon name="trash" size={15} /></button>
+                <button className="tool small" title={t.duplicate} onClick={(e) => { e.stopPropagation(); duplicate(x.id, x.title) }}><Icon name="copy" size={15} /></button>
+                <button className="tool small" title={t.remove} onClick={(e) => { e.stopPropagation(); removeList(x.id) }}><Icon name="trash" size={15} /></button>
               </div>
             </div>
           ))}
         </div>
         <div className="side-foot">
           <button className="link" onClick={importFile}><Icon name="open" size={16} />{t.open}</button>
-          <button className="tool" title={t.settings} onClick={() => { setSideOpen(false); setSettings(true) }}><Icon name="gear" size={18} /></button>
+          <button className="tool" title={t.settings} onClick={() => { setSideOpen(false); setSettings('appearance') }}><Icon name="gear" size={18} /></button>
         </div>
+        <div className="side-grip" onPointerDown={grip} onDoubleClick={() => { setSideW(270); try { localStorage.removeItem('roarlist-side') } catch { /* private */ } }} />
       </aside>
 
       {!p ? (
@@ -331,10 +369,10 @@ export default function App() {
         <main className="main">
           <div className="bar">
             <button className="tool side-toggle" title={t.shotlists} onClick={() => setSideOpen(true)}><Icon name="menu" size={18} /></button>
-            <div className="seg">
+            <Lens className="seg" dep={view}>
               <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}><Icon name="list" size={16} />{t.list}</button>
               <button className={view === 'board' ? 'on' : ''} onClick={() => setView('board')}><Icon name="board" size={16} />{t.board}</button>
-            </div>
+            </Lens>
             <span className="grow" />
             {tot && <span className="muted small totals">{tot.done}/{tot.shots} {t.shots.toLowerCase()}{tot.secs ? ` · ${fmtDur(tot.secs)}` : ''}</span>}
             <div className="menu-wrap">
@@ -353,7 +391,7 @@ export default function App() {
             </div>
           </div>
 
-          <div className="page">
+          <div className="page swap" key={p.id}>
             <header className="doc-head">
               <input className="title" value={p.title} placeholder={t.untitled} onChange={(e) => edit((x) => ({ ...x, title: e.target.value }))} />
               <div className="meta-row">
@@ -374,7 +412,23 @@ export default function App() {
         </main>
       )}
 
-      {settings && <SettingsSheet onClose={() => setSettings(false)} />}
+      {settings && <SettingsSheet start={settings} onClose={() => setSettings(false)} />}
+      {ctx && ctxList && (
+        <>
+          <div className="menu-shade" onMouseDown={() => setCtx(null)} onContextMenu={(e) => { e.preventDefault(); setCtx(null) }} />
+          <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }} onClick={() => setCtx(null)}>
+            <button onClick={() => open(ctx.id)}><Icon name="open" size={16} />{t.openList}</button>
+            <button onClick={async () => { await open(ctx.id); later(() => document.querySelector<HTMLInputElement>('.title')?.select()) }}><Icon name="edit" size={16} />{t.rename}</button>
+            <button onClick={() => duplicate(ctx.id, ctxList.title)}><Icon name="copy" size={16} />{t.duplicate}</button>
+            <hr />
+            <button onClick={async () => { await open(ctx.id); exportRef.current('pdf') }}><Icon name="list" size={16} />{t.pdfList}</button>
+            <button onClick={async () => { await open(ctx.id); exportRef.current('board') }}><Icon name="board" size={16} />{t.pdfBoard}</button>
+            <button onClick={async () => { await open(ctx.id); exportRef.current('file') }}><Icon name="clapper" size={16} />{t.file}</button>
+            <hr />
+            <button className="danger" onClick={() => removeList(ctx.id)}><Icon name="trash" size={16} />{t.remove}</button>
+          </div>
+        </>
+      )}
       {recovery && <NewPassword onDone={() => { setRecovery(false); say(t.passwordSaved) }} />}
       {toast && (
         <div className="toast">{toast.text}{toast.undo && <button className="link undo" onClick={undo}>{t.undo}</button>}</div>
