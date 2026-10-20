@@ -38,7 +38,7 @@ const el = {
   k_paste: '⌘ V σε πλάνο', k_pasteWhat: 'Η εικόνα του προχείρου γίνεται κάδρο', k_right: 'Δεξί κλικ σε λίστα', k_rightWhat: 'Άνοιγμα, αντίγραφο, εξαγωγή, διαγραφή',
   searchPh: 'Αναζήτηση', openList: 'Άνοιγμα', rename: 'Μετονομασία', noMatch: 'Τίποτα δεν ταιριάζει',
 
-  settings: 'Ρυθμίσεις', appearance: 'Εμφάνιση', mode: 'Θέμα', modeSystem: 'Όπως το σύστημα', modeDark: 'Σκούρο', modeLight: 'Ανοιχτό',
+  settings: 'Ρυθμίσεις', appearance: 'Εμφάνιση', mode: 'Μέρα και νύχτα', modeSystem: 'Όπως το σύστημα', modeDark: 'Σκούρο', modeLight: 'Ανοιχτό',
   accent: 'Χρώμα', radius: 'Γωνίες', textSize: 'Μέγεθος γραμμάτων', small: 'Μικρά', standard: 'Κανονικά', large: 'Μεγάλα',
   language: 'Γλώσσα', langSystem: 'Όπως το σύστημα', defaults: 'Νέα shot lists', defAspect: 'Κάδρο για νέα λίστα', defLens: 'Φακός για το πρώτο πλάνο',
   columns: 'Στήλες στη λίστα', columnsHint: 'Ό,τι κλείσεις κρύβεται από τη λίστα και το PDF. Τα δεδομένα μένουν.',
@@ -93,7 +93,7 @@ const en: typeof el = {
   k_paste: '⌘ V on a shot', k_pasteWhat: 'The picture on the clipboard becomes its frame', k_right: 'Right click a list', k_rightWhat: 'Open, duplicate, export, delete',
   searchPh: 'Search', openList: 'Open', rename: 'Rename', noMatch: 'Nothing matches',
 
-  settings: 'Settings', appearance: 'Appearance', mode: 'Theme', modeSystem: 'Match system', modeDark: 'Dark', modeLight: 'Light',
+  settings: 'Settings', appearance: 'Appearance', mode: 'Day and Night', modeSystem: 'Match system', modeDark: 'Dark', modeLight: 'Light',
   accent: 'Colour', radius: 'Corners', textSize: 'Text size', small: 'Small', standard: 'Standard', large: 'Large',
   language: 'Language', langSystem: 'Match system', defaults: 'New shot lists', defAspect: 'Aspect for a new list', defLens: 'Lens for the first shot',
   columns: 'Columns in the list', columnsHint: 'What you turn off is hidden from the list and the PDF. The data stays.',

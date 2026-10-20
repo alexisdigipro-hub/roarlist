@@ -220,4 +220,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after { animati
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 10px 18px; align-items: center; }
 .keys kbd { justify-self: start; font: 600 12px var(--font); padding: 4px 9px; border-radius: 8px; background: var(--glass-2); border: 1px solid var(--edge); white-space: nowrap; }
 .set-select option { font-family: inherit; }
+.set-body .swatches { gap: 6px; flex-wrap: nowrap; }
+.set-body .swatch { width: 22px; height: 22px; flex: none; }
+.set-body .set-ctl:has(.swatches) { max-width: 75%; }
 .side-empty { padding: 10px 12px; }
