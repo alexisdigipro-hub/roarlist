@@ -36,6 +36,7 @@ const el = {
   k_search: 'Αναζήτηση στα shot lists', k_new: 'Νέο shot list', k_shot: 'Νέο πλάνο κάτω από αυτό', k_scene: 'Νέα σκηνή', k_pdf: 'PDF λίστα',
   k_board: 'PDF storyboard', k_undo: 'Αναίρεση διαγραφής ή μετακίνησης', k_settings: 'Ρυθμίσεις', k_keys: 'Αυτή η σελίδα', k_esc: 'Κλείνει μενού και παράθυρα',
   k_paste: '⌘ V σε πλάνο', k_pasteWhat: 'Η εικόνα του προχείρου γίνεται κάδρο', k_right: 'Δεξί κλικ σε λίστα', k_rightWhat: 'Άνοιγμα, αντίγραφο, εξαγωγή, διαγραφή',
+  demoTitle: 'Παράδειγμα', demoCta: 'Φτιάξε το δικό σου shot list με τον λογαριασμό RoarMe →',
   searchPh: 'Αναζήτηση', openList: 'Άνοιγμα', rename: 'Μετονομασία', noMatch: 'Τίποτα δεν ταιριάζει',
 
   settings: 'Ρυθμίσεις', appearance: 'Εμφάνιση', mode: 'Μέρα και νύχτα', modeSystem: 'Όπως το σύστημα', modeDark: 'Σκούρο', modeLight: 'Ανοιχτό',
@@ -91,6 +92,7 @@ const en: typeof el = {
   k_search: 'Search your shot lists', k_new: 'New shot list', k_shot: 'New shot below this one', k_scene: 'New scene', k_pdf: 'PDF list',
   k_board: 'PDF storyboard', k_undo: 'Undo a delete or a move', k_settings: 'Settings', k_keys: 'This page', k_esc: 'Closes menus and windows',
   k_paste: '⌘ V on a shot', k_pasteWhat: 'The picture on the clipboard becomes its frame', k_right: 'Right click a list', k_rightWhat: 'Open, duplicate, export, delete',
+  demoTitle: 'Example', demoCta: 'Make your own shot list with your RoarMe account →',
   searchPh: 'Search', openList: 'Open', rename: 'Rename', noMatch: 'Nothing matches',
 
   settings: 'Settings', appearance: 'Appearance', mode: 'Day and Night', modeSystem: 'Match system', modeDark: 'Dark', modeLight: 'Light',

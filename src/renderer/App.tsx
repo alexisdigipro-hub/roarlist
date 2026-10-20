@@ -4,7 +4,7 @@ import type { MenuCommand, PrintMode, Project, ProjectSummary } from '../shared/
 import { fmtDur, totals } from '../shared/print'
 import { ASPECTS, printLabels, t } from './i18n'
 import * as M from './model'
-import { api, isWeb } from './api'
+import { api, isDemo, isWeb } from './api'
 import { Board } from './components/Board'
 import { Icon } from './components/Icon'
 import { Img } from './components/Img'
@@ -202,7 +202,7 @@ export default function App() {
 
   // on the web: an account first (RoarMe's), then the account's settings and shot lists; on the desktop: straight in
   useEffect(() => {
-    if (!isWeb) { start(); return }
+    if (!isWeb || isDemo) { start(); return }
     let who = ''
     const signedIn = async () => {
       if (who === uid()) return
@@ -351,6 +351,9 @@ export default function App() {
             </div>
           ))}
         </div>
+        {isDemo && (
+          <a className="demo-note" href="./" target="_top"><b>{t.demoTitle}</b><span>{t.demoCta}</span></a>
+        )}
         <div className="side-foot">
           <button className="link" onClick={importFile}><Icon name="open" size={16} />{t.open}</button>
           <button className="tool" title={t.settings} onClick={() => { setSideOpen(false); setSettings('appearance') }}><Icon name="gear" size={18} /></button>
