@@ -11,8 +11,14 @@ export function Img({ projectId, file, ...rest }: { projectId: string; file: str
     else { setSrc(''); s.then((v) => { if (live) setSrc(v) }) }
     return () => { live = false }
   }, [projectId, file])
+  return src ? <Pic key={src} src={src} {...rest} /> : null
+}
+
+// pictures sharpen in as they arrive (RoarMe's .pic-img); one already decoded (a cached or inline picture) shows at once
+function Pic({ src, ...rest }: { src: string } & React.ImgHTMLAttributes<HTMLImageElement>) {
   const [ready, setReady] = useState(false)
-  useEffect(() => setReady(false), [src])
-  // pictures sharpen in as they arrive (RoarMe's .pic-img)
-  return src ? <img src={src} alt="" {...rest} className={`pic${ready ? ' ready' : ''}`} onLoad={() => setReady(true)} /> : null
+  return (
+    <img src={src} alt="" {...rest} className={`pic${ready ? ' ready' : ''}`} onLoad={() => setReady(true)}
+      ref={(el) => { if (el?.complete && el.naturalWidth && !ready) setReady(true) }} />
+  )
 }
