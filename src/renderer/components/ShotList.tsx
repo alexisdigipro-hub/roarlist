@@ -5,6 +5,7 @@ import type { Project, Scene, Shot } from '../../shared/api'
 import { fmtDur, ratio, shotNo } from '../../shared/print'
 import { ANGLES, MOVES, SIZES, t, val } from '../i18n'
 import { moveShot, parseDur } from '../model'
+import { useSettings } from '../useSettings'
 import type { Ops } from '../App'
 import { Frame } from './Frame'
 import { Icon } from './Icon'
@@ -13,10 +14,19 @@ const LENSES = ['14mm', '18mm', '24mm', '28mm', '35mm', '40mm', '50mm', '65mm', 
 
 type Drop = { scene: string; index: number } | null
 
+// the list's columns and their widths; Settings can hide the optional ones
+const WIDTH: [string, string][] = [
+  ['grip', '18px'], ['no', '40px'], ['frame', '112px'], ['size', '62px'], ['angle', '112px'], ['move', '112px'], ['lens', '70px'],
+  ['description', 'minmax(200px, 1.7fr)'], ['cast', 'minmax(90px, .8fr)'], ['duration', '58px'], ['notes', 'minmax(120px, 1fr)'], ['done', '26px'], ['x', '28px'],
+]
+
 export function ShotList({ p, ops }: { p: Project; ops: Ops }) {
   const dragging = useRef<string | null>(null)
   const [drop, setDrop] = useState<Drop>(null)
   const r = ratio(p.aspect)
+  const st = useSettings()
+  const on = (c: string) => st.columns[c] !== false
+  const cols = WIDTH.filter(([c]) => on(c)).map(([, w]) => w).join(' ')
 
   const overRow = (e: React.DragEvent, sc: Scene, i: number) => {
     if (!dragging.current) return
@@ -32,7 +42,7 @@ export function ShotList({ p, ops }: { p: Project; ops: Ops }) {
   }
 
   return (
-    <div className="scenes" onDragEnd={() => { dragging.current = null; setDrop(null) }}>
+    <div className="scenes" style={{ '--cols': cols } as React.CSSProperties} onDragEnd={() => { dragging.current = null; setDrop(null) }}>
       <datalist id="sizes">{SIZES.map((s) => <option key={s} value={s} />)}</datalist>
       <datalist id="lenses">{LENSES.map((s) => <option key={s} value={s} />)}</datalist>
       {p.scenes.map((sc, si) => (
@@ -52,12 +62,13 @@ export function ShotList({ p, ops }: { p: Project; ops: Ops }) {
           </div>
 
           <div className="grid-head">
-            <span /><span>#</span><span>{t.frame}</span><span>{t.size}</span><span>{t.angle}</span><span>{t.move}</span><span>{t.lens}</span>
-            <span>{t.description}</span><span>{t.cast}</span><span>{t.duration}</span><span>{t.notes}</span><span title={t.done}><Icon name="check" size={14} /></span><span />
+            <span /><span>#</span>{on('frame') && <span>{t.frame}</span>}{on('size') && <span>{t.size}</span>}{on('angle') && <span>{t.angle}</span>}
+            {on('move') && <span>{t.move}</span>}{on('lens') && <span>{t.lens}</span>}<span>{t.description}</span>{on('cast') && <span>{t.cast}</span>}
+            {on('duration') && <span>{t.duration}</span>}{on('notes') && <span>{t.notes}</span>}<span title={t.done}><Icon name="check" size={14} /></span><span />
           </div>
 
           {sc.shots.map((s, i) => (
-            <Row key={s.id} p={p} s={s} no={shotNo(sc.number, i)} r={r} ops={ops}
+            <Row key={s.id} p={p} s={s} no={shotNo(sc.number, i)} r={r} ops={ops} on={on}
               dropBefore={drop?.scene === sc.id && drop.index === i}
               dropAfter={drop?.scene === sc.id && drop.index === sc.shots.length && i === sc.shots.length - 1}
               onGrab={() => { dragging.current = s.id }}
@@ -75,12 +86,12 @@ export function ShotList({ p, ops }: { p: Project; ops: Ops }) {
 }
 
 type RowProps = {
-  p: Project; s: Shot; no: string; r: number; ops: Ops
+  p: Project; s: Shot; no: string; r: number; ops: Ops; on: (col: string) => boolean
   dropBefore: boolean; dropAfter: boolean
   onGrab: () => void; onOver: (e: React.DragEvent) => void; onDrop: (e: React.DragEvent) => void
 }
 
-function Row({ p, s, no, r, ops, dropBefore, dropAfter, onGrab, onOver, onDrop }: RowProps) {
+function Row({ p, s, no, r, ops, on, dropBefore, dropAfter, onGrab, onOver, onDrop }: RowProps) {
   const [draggable, setDraggable] = useState(false)
   const set = (patch: Partial<Shot>, history = false) => ops.edit((x) => ({
     ...x, scenes: x.scenes.map((sc) => ({ ...sc, shots: sc.shots.map((y) => (y.id === s.id ? { ...y, ...patch } : y)) })),
@@ -96,21 +107,25 @@ function Row({ p, s, no, r, ops, dropBefore, dropAfter, onGrab, onOver, onDrop }
       onKeyDown={(e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); ops.addShotAfter(s.id) } }}>
       <span className="grip" title={t.drag} onMouseDown={() => setDraggable(true)} onMouseUp={() => setDraggable(false)}><Icon name="grip" size={16} /></span>
       <b className="no">{no}</b>
-      <Frame projectId={p.id} image={s.image} ratio={r} onImage={(f) => ops.setImage(s.id, f)} onClear={() => set({ image: '' }, true)} />
-      <input list="sizes" value={s.size} onChange={(e) => set({ size: e.target.value.toUpperCase() })} />
-      <select value={s.angle} onChange={(e) => set({ angle: e.target.value })}>
-        <option value="" />
-        {ANGLES.map((a) => <option key={a} value={a}>{val(a)}</option>)}
-      </select>
-      <select value={s.move} onChange={(e) => set({ move: e.target.value })}>
-        <option value="" />
-        {MOVES.map((a) => <option key={a} value={a}>{val(a)}</option>)}
-      </select>
-      <input list="lenses" value={s.lens} onChange={(e) => set({ lens: e.target.value })} />
+      {on('frame') && <Frame projectId={p.id} image={s.image} ratio={r} onImage={(f) => ops.setImage(s.id, f)} onClear={() => set({ image: '' }, true)} />}
+      {on('size') && <input list="sizes" value={s.size} onChange={(e) => set({ size: e.target.value.toUpperCase() })} />}
+      {on('angle') && (
+        <select value={s.angle} onChange={(e) => set({ angle: e.target.value })}>
+          <option value="" />
+          {ANGLES.map((a) => <option key={a} value={a}>{val(a)}</option>)}
+        </select>
+      )}
+      {on('move') && (
+        <select value={s.move} onChange={(e) => set({ move: e.target.value })}>
+          <option value="" />
+          {MOVES.map((a) => <option key={a} value={a}>{val(a)}</option>)}
+        </select>
+      )}
+      {on('lens') && <input list="lenses" value={s.lens} onChange={(e) => set({ lens: e.target.value })} />}
       <textarea rows={1} value={s.description} placeholder={t.descPh} onChange={(e) => set({ description: e.target.value })} />
-      <textarea rows={1} value={s.cast} onChange={(e) => set({ cast: e.target.value })} />
-      <Duration value={s.duration} onChange={(duration) => set({ duration })} />
-      <textarea rows={1} value={s.notes} onChange={(e) => set({ notes: e.target.value })} />
+      {on('cast') && <textarea rows={1} value={s.cast} onChange={(e) => set({ cast: e.target.value })} />}
+      {on('duration') && <Duration value={s.duration} onChange={(duration) => set({ duration })} />}
+      {on('notes') && <textarea rows={1} value={s.notes} onChange={(e) => set({ notes: e.target.value })} />}
       <label className="done" title={t.done}><input type="checkbox" checked={s.done} onChange={(e) => set({ done: e.target.checked })} /><span><Icon name="check" size={13} /></span></label>
       <button className="tool small row-x" title={t.remove} onClick={() => ops.removeShot(s.id)}><Icon name="close" size={15} /></button>
     </div>

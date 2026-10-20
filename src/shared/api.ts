@@ -41,7 +41,11 @@ export type PrintMode = 'list' | 'board'
 
 // the words the printed page needs, in the app's language
 export type PrintLabels = Record<'scene' | 'shot' | 'frame' | 'size' | 'angle' | 'move' | 'lens' | 'description' | 'cast' | 'duration'
-  | 'notes' | 'client' | 'director' | 'dop' | 'date' | 'shots' | 'total' | 'done', string> & { values: Record<string, string> }
+  | 'notes' | 'client' | 'director' | 'dop' | 'date' | 'shots' | 'total' | 'done', string> & {
+  values: Record<string, string>
+  paper?: 'A4' | 'Letter'
+  hide?: string[] // columns left out: frame, size, angle, move, lens, cast, duration, notes
+}
 
 export type MenuCommand = 'new' | 'import' | 'export-pdf' | 'export-board' | 'export-html' | 'export-file' | 'add-scene' | 'add-shot'
 

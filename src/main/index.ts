@@ -87,7 +87,7 @@ async function exportPdf(id: string, mode: PrintMode, labels: PrintLabels) {
     await w.loadFile(page)
     // let the frames finish decoding before the page is printed
     await new Promise((ok) => setTimeout(ok, 300))
-    const pdf = await w.webContents.printToPDF({ landscape: true, pageSize: 'A4', printBackground: true, preferCSSPageSize: true,
+    const pdf = await w.webContents.printToPDF({ landscape: true, pageSize: labels.paper === 'Letter' ? 'Letter' : 'A4', printBackground: true, preferCSSPageSize: true,
       displayHeaderFooter: true, headerTemplate: '<span></span>',
       footerTemplate: `<div style="width:100%;font:7px Helvetica,Arial;color:#8a857b;padding:0 12mm;display:flex;justify-content:space-between"><span>${(p.title || '').replace(/[<>&]/g, '')}</span><span><span class="pageNumber"></span> / <span class="totalPages"></span></span></div>` })
     fs.writeFileSync(file, pdf)

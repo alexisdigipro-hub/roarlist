@@ -8,6 +8,11 @@ import { api, isWeb } from './api'
 import { Board } from './components/Board'
 import { Icon } from './components/Icon'
 import { Img } from './components/Img'
+import { Auth, NewPassword } from './components/Auth'
+import { SettingsSheet } from './components/SettingsSheet'
+import { currentSession, onAuth, uid } from './cloud'
+import * as S from './settings'
+import { importLegacy, loadAccountSettings, saveAccountSettings } from './web-api'
 import { ShotList } from './components/ShotList'
 
 
@@ -38,6 +43,9 @@ export default function App() {
   const [view, setView] = useState<PrintMode>(() => (localStorage.getItem('view') as PrintMode) || 'list')
   const [menu, setMenu] = useState(false)
   const [sideOpen, setSideOpen] = useState(false)
+  const [settings, setSettings] = useState(false)
+  const [authed, setAuthed] = useState<boolean | null>(null)
+  const [recovery, setRecovery] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
   const [update, setUpdate] = useState<{ status: string; version: string } | null>(null)
   const cur = useRef<Project | null>(null)
@@ -59,7 +67,13 @@ export default function App() {
     clearTimeout(timer.current)
     if (!dirty.current || !cur.current) return
     dirty.current = false
-    await api.save(cur.current)
+    try {
+      await api.save(cur.current)
+    } catch {
+      dirty.current = true // tried again with the next change or when the window loses focus
+      say(t.offlineErr)
+      return
+    }
     refresh()
   }, [refresh])
 
@@ -83,7 +97,13 @@ export default function App() {
 
   const create = useCallback(async () => {
     await flush()
-    const next = await api.create('')
+    let next = await api.create('')
+    // the defaults from Settings
+    const d = S.get()
+    if (d.aspect !== next.aspect || d.lens) {
+      next = { ...next, aspect: d.aspect, scenes: next.scenes.map((sc) => ({ ...sc, shots: sc.shots.map((x) => ({ ...x, lens: d.lens })) })) }
+      await api.save(next)
+    }
     history.current = []
     cur.current = next
     setP(next)
@@ -129,7 +149,10 @@ export default function App() {
       put({ ...cur.current, scenes: [...cur.current.scenes, sc] }, true)
       later(() => document.querySelector<HTMLInputElement>('.scene:last-of-type .scene-heading')?.focus())
     },
-    removeShot: (id) => { edit((x) => M.removeShot(x, id), true); say(t.deleted, true) },
+    removeShot: (id) => {
+      if (S.get().confirmDelete && !confirm(t.removeShotQ)) return
+      edit((x) => M.removeShot(x, id), true); say(t.deleted, true)
+    },
     removeScene: (id) => {
       const sc = cur.current?.scenes.find((x) => x.id === id)
       if (!sc) return
@@ -162,14 +185,47 @@ export default function App() {
     if (n) { await refresh(); open(n.id) }
   }
 
-  // first load: the shot lists, and the one open last time
+  // the shot lists, and the one open last time
+  const start = useCallback(async () => {
+    const all = await api.list()
+    setLists(all)
+    const last = localStorage.getItem('last')
+    const pick = all.find((x) => x.id === last) || all[0]
+    if (pick) open(pick.id)
+  }, [open])
+
+  // on the web: an account first (RoarMe's), then the account's settings and shot lists; on the desktop: straight in
   useEffect(() => {
-    api.list().then(async (all) => {
-      setLists(all)
-      const last = localStorage.getItem('last')
-      const pick = all.find((x) => x.id === last) || all[0]
-      if (pick) open(pick.id)
+    if (!isWeb) { start(); return }
+    let who = ''
+    const signedIn = async () => {
+      if (who === uid()) return
+      who = uid()
+      setAuthed(true)
+      try {
+        const remote = await loadAccountSettings()
+        if (remote) S.set(remote as Partial<S.Settings>, true)
+        else saveAccountSettings(S.get()).catch(() => {})
+      } catch { /* the local settings stay */ }
+      let saveTimer: ReturnType<typeof setTimeout>
+      S.onChange((x) => { clearTimeout(saveTimer); saveTimer = setTimeout(() => saveAccountSettings(x).catch(() => {}), 600) })
+      try { const n = await importLegacy(); if (n) say(t.imported) } catch { /* left in the browser */ }
+      await start()
+    }
+    currentSession().then((s) => { if (s) signedIn(); else setAuthed(false) })
+    return onAuth((s, event) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+      if (s) signedIn()
+      else if (who) {
+        who = ''
+        S.onChange(null)
+        clearTimeout(timer.current); dirty.current = false; cur.current = null
+        setP(null); setLists(null); setAuthed(false); setSettings(false)
+      }
     })
+  }, [start])
+
+  useEffect(() => {
     api.update.state().then(setUpdate)
     const offU = api.update.on(setUpdate)
     const offO = api.onOpened((n) => { refresh(); open(n.id) })
@@ -216,6 +272,7 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem('view', view) }, [view])
 
+  if (isWeb && authed === false) return <Auth />
   if (!lists) return <div className="boot"><div className="spinner" /></div>
 
   const tot = p ? totals(p) : null
@@ -257,7 +314,10 @@ export default function App() {
             </div>
           ))}
         </div>
-        <button className="link import" onClick={importFile}><Icon name="open" size={16} />{t.open}</button>
+        <div className="side-foot">
+          <button className="link" onClick={importFile}><Icon name="open" size={16} />{t.open}</button>
+          <button className="tool" title={t.settings} onClick={() => { setSideOpen(false); setSettings(true) }}><Icon name="gear" size={18} /></button>
+        </div>
       </aside>
 
       {!p ? (
@@ -314,6 +374,8 @@ export default function App() {
         </main>
       )}
 
+      {settings && <SettingsSheet onClose={() => setSettings(false)} />}
+      {recovery && <NewPassword onDone={() => { setRecovery(false); say(t.passwordSaved) }} />}
       {toast && (
         <div className="toast">{toast.text}{toast.undo && <button className="link undo" onClick={undo}>{t.undo}</button>}</div>
       )}

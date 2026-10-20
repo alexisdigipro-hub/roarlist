@@ -25,6 +25,9 @@ export function totals(p: Project) {
 
 export function printHtml(p: Project, mode: PrintMode, L: PrintLabels, img: (file: string) => string, forScreen = false) {
   const v = (k: string) => (k ? L.values[k] || k : '')
+  const on = (col: string) => !(L.hide || []).includes(col)
+  const cell = (col: string, html: string, cls = '') => (on(col) ? `<td${cls ? ` class="${cls}"` : ''}>${html}</td>` : '')
+  const th = (col: string, label: string, cls = '') => (on(col) ? `<th${cls ? ` class="${cls}"` : ''}>${esc(label)}</th>` : '')
   const t = totals(p)
   const meta = [
     p.client && `<span><i>${esc(L.client)}</i>${esc(p.client)}</span>`,
@@ -34,7 +37,7 @@ export function printHtml(p: Project, mode: PrintMode, L: PrintLabels, img: (fil
     `<span><i>${esc(L.shots)}</i>${t.shots}${t.secs ? ` · ${fmtDur(t.secs)}` : ''}</span>`,
   ].filter(Boolean).join('')
   const frame = (s: Shot) => s.image ? `<img src="${esc(img(s.image))}" alt="">` : ''
-  const tech = (s: Shot) => [s.size, v(s.angle), v(s.move), s.lens].filter(Boolean).map(esc).join(' · ')
+  const tech = (s: Shot) => [on('size') && s.size, on('angle') && v(s.angle), on('move') && v(s.move), on('lens') && s.lens].filter(Boolean).map((x) => esc(String(x))).join(' · ')
 
   const body = p.scenes.map((sc) => {
     const head = `<h2><b>${esc(L.scene)} ${esc(sc.number)}</b>${sc.heading ? ` ${esc(sc.heading)}` : ''}</h2>`
@@ -42,24 +45,24 @@ export function printHtml(p: Project, mode: PrintMode, L: PrintLabels, img: (fil
       return `<section>${head}<div class="board">${sc.shots.map((s, i) => `
         <figure class="${s.done ? 'is-done' : ''}">
           <div class="frame">${frame(s)}</div>
-          <figcaption><b>${esc(shotNo(sc.number, i))}</b> <span class="tech">${tech(s)}${s.duration ? ` · ${fmtDur(s.duration)}` : ''}</span>
-          ${s.description ? `<p>${br(s.description)}</p>` : ''}${s.cast ? `<p class="cast">${esc(s.cast)}</p>` : ''}</figcaption>
+          <figcaption><b>${esc(shotNo(sc.number, i))}</b> <span class="tech">${tech(s)}${on('duration') && s.duration ? ` · ${fmtDur(s.duration)}` : ''}</span>
+          ${s.description ? `<p>${br(s.description)}</p>` : ''}${on('cast') && s.cast ? `<p class="cast">${esc(s.cast)}</p>` : ''}</figcaption>
         </figure>`).join('')}</div></section>`
     }
     return `<section>${head}<table>
-      <thead><tr><th class="c-no">${esc(L.shot)}</th><th class="c-fr">${esc(L.frame)}</th><th>${esc(L.size)}</th><th>${esc(L.angle)}</th><th>${esc(L.move)}</th>
-      <th>${esc(L.lens)}</th><th class="c-desc">${esc(L.description)}</th><th>${esc(L.cast)}</th><th>${esc(L.duration)}</th><th class="c-notes">${esc(L.notes)}</th><th class="c-ok"></th></tr></thead>
+      <thead><tr><th class="c-no">${esc(L.shot)}</th>${th('frame', L.frame, 'c-fr')}${th('size', L.size)}${th('angle', L.angle)}${th('move', L.move)}
+      ${th('lens', L.lens)}<th class="c-desc">${esc(L.description)}</th>${th('cast', L.cast)}${th('duration', L.duration)}${th('notes', L.notes, 'c-notes')}<th class="c-ok"></th></tr></thead>
       <tbody>${sc.shots.map((s, i) => `<tr class="${s.done ? 'is-done' : ''}">
-        <td class="c-no"><b>${esc(shotNo(sc.number, i))}</b></td><td class="c-fr">${s.image ? `<div class="frame">${frame(s)}</div>` : ''}</td>
-        <td>${esc(s.size)}</td><td>${esc(v(s.angle))}</td><td>${esc(v(s.move))}</td><td>${esc(s.lens)}</td>
-        <td class="c-desc">${br(s.description)}</td><td>${esc(s.cast)}</td><td>${fmtDur(s.duration)}</td><td class="c-notes">${br(s.notes)}</td>
+        <td class="c-no"><b>${esc(shotNo(sc.number, i))}</b></td>${cell('frame', s.image ? `<div class="frame">${frame(s)}</div>` : '', 'c-fr')}
+        ${cell('size', esc(s.size))}${cell('angle', esc(v(s.angle)))}${cell('move', esc(v(s.move)))}${cell('lens', esc(s.lens))}
+        <td class="c-desc">${br(s.description)}</td>${cell('cast', esc(s.cast))}${cell('duration', fmtDur(s.duration))}${cell('notes', br(s.notes), 'c-notes')}
         <td class="c-ok">${s.done ? '✓' : '<span class="box"></span>'}</td></tr>`).join('')}</tbody></table></section>`
   }).join('')
 
   const r = ratio(p.aspect)
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(p.title || 'RoarList')}</title><style>
-@page { size: A4 landscape; margin: 12mm 12mm 14mm; }
+@page { size: ${L.paper === 'Letter' ? 'letter' : 'A4'} landscape; margin: 12mm 12mm 14mm; }
 * { box-sizing: border-box; }
 body { margin: 0; font: 9.5pt/1.4 Jost, Futura, 'Avenir Next', 'Century Gothic', 'Segoe UI', Helvetica, Arial, sans-serif; color: #151412; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 ${forScreen ? 'body { padding: 32px; max-width: 1400px; margin: 0 auto; }' : ''}
