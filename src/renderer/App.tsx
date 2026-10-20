@@ -1,15 +1,15 @@
 // RoarList's window: shot lists on the left, the open one on the right as a list or a storyboard.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MenuCommand, PrintMode, Project, ProjectSummary } from '../shared/api'
-import { imageUrl } from '../shared/api'
 import { fmtDur, totals } from '../shared/print'
 import { ASPECTS, printLabels, t } from './i18n'
 import * as M from './model'
+import { api, isWeb } from './api'
 import { Board } from './components/Board'
 import { Icon } from './components/Icon'
+import { Img } from './components/Img'
 import { ShotList } from './components/ShotList'
 
-const api = window.roarlist
 
 export type Ops = {
   edit: (fn: (p: Project) => Project, history?: boolean) => void
@@ -35,6 +35,7 @@ export default function App() {
   const [p, setP] = useState<Project | null>(null)
   const [view, setView] = useState<PrintMode>(() => (localStorage.getItem('view') as PrintMode) || 'list')
   const [menu, setMenu] = useState(false)
+  const [sideOpen, setSideOpen] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
   const [update, setUpdate] = useState<{ status: string; version: string } | null>(null)
   const cur = useRef<Project | null>(null)
@@ -150,6 +151,9 @@ export default function App() {
     if (ok) say(t.exported)
   }
 
+  const exportRef = useRef(exportAs)
+  exportRef.current = exportAs
+
   const importFile = async () => {
     await flush()
     const n = await api.importFile()
@@ -197,6 +201,7 @@ export default function App() {
     const key = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z' && !typing()) { e.preventDefault(); undo() }
       if (e.key === 'Escape') setMenu(false)
+      if (isWeb && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'p') { e.preventDefault(); exportRef.current(e.shiftKey ? 'board' : 'pdf') }
     }
     const paste = (e: ClipboardEvent) => {
       const f = Array.from(e.clipboardData?.files || []).find((x) => x.type.startsWith('image/'))
@@ -217,16 +222,17 @@ export default function App() {
   )
 
   return (
-    <div className="app">
+    <div className={`app${sideOpen ? ' side-open' : ''}`}>
+      <div className="drag" />
+      {sideOpen && <div className="side-shade" onClick={() => setSideOpen(false)} />}
       <aside className="side">
-        <div className="drag" />
         <div className="brand"><b>ROAR</b><i>LIST</i></div>
-        <button className="pill primary new" onClick={create}><Icon name="plus" size={16} />{t.newList}</button>
+        <button className="pill primary new" onClick={() => { setSideOpen(false); create() }}><Icon name="plus" size={16} />{t.newList}</button>
         <div className="side-title muted small">{t.shotlists}</div>
         <div className="projects">
           {lists.map((x) => (
-            <div key={x.id} className={`project${p?.id === x.id ? ' on' : ''}`} onClick={() => p?.id !== x.id && open(x.id)}>
-              <div className="cover">{x.cover ? <img src={imageUrl(x.id, x.cover)} alt="" /> : <Icon name="clapper" size={18} />}</div>
+            <div key={x.id} className={`project${p?.id === x.id ? ' on' : ''}`} onClick={() => { setSideOpen(false); if (p?.id !== x.id) open(x.id) }}>
+              <div className="cover">{x.cover ? <Img projectId={x.id} file={x.cover} /> : <Icon name="clapper" size={18} />}</div>
               <div className="grow">
                 <div className="ellipsis">{(p?.id === x.id ? p.title : x.title) || t.untitled}</div>
                 <div className="muted small ellipsis">
@@ -254,7 +260,6 @@ export default function App() {
 
       {!p ? (
         <main className="main empty">
-          <div className="drag" />
           <div className="empty-mark"><b>ROAR</b><i>LIST</i></div>
           <h2>{t.empty}</h2>
           <p className="muted">{t.emptySub}</p>
@@ -263,7 +268,7 @@ export default function App() {
       ) : (
         <main className="main">
           <div className="bar">
-            <div className="drag" />
+            <button className="tool side-toggle" title={t.shotlists} onClick={() => setSideOpen(true)}><Icon name="menu" size={18} /></button>
             <div className="seg">
               <button className={view === 'list' ? 'on' : ''} onClick={() => setView('list')}><Icon name="list" size={16} />{t.list}</button>
               <button className={view === 'board' ? 'on' : ''} onClick={() => setView('board')}><Icon name="board" size={16} />{t.board}</button>

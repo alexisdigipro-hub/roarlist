@@ -1,8 +1,8 @@
 // A shot's frame: a reference still or a storyboard sketch. Drop a file on it, paste one, or click to choose.
 import { useRef, useState } from 'react'
-import { imageUrl } from '../../shared/api'
 import { t } from '../i18n'
 import { Icon } from './Icon'
+import { Img } from './Img'
 
 type Props = {
   projectId: string
@@ -34,7 +34,7 @@ export function Frame({ projectId, image, ratio, big, onImage, onClear }: Props)
       }}
     >
       {image
-        ? <img src={imageUrl(projectId, image)} alt="" draggable={false} />
+        ? <Img projectId={projectId} file={image} draggable={false} />
         : <span className="frame-empty"><Icon name="image" size={big ? 26 : 18} />{big && <small>{t.dropImage}</small>}</span>}
       {image && (
         <button className="frame-x" title={t.removeImage} onClick={(e) => { e.stopPropagation(); onClear() }}><Icon name="close" size={14} /></button>

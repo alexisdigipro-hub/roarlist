@@ -14,6 +14,7 @@ const P: Record<string, string> = {
   copy: 'M8 8h11v11H8zM5 16V5h11',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',
+  menu: 'M4 7h16M4 12h16M4 17h16',
   more: 'M6 12h.01M12 12h.01M18 12h.01',
 }
 

@@ -12,6 +12,8 @@ const listen = <T>(channel: string) => (cb: (v: T) => void) => {
 
 const api: ListApi & { update: Record<string, (...a: any[]) => any> } = {
   platform: process.platform,
+  // a shot's frame, served by the main process from the project's images folder
+  imageSrc: (projectId, file) => `roarimg://p/${projectId}/${encodeURIComponent(file)}`,
   list: call('list') as ListApi['list'],
   get: call('get') as ListApi['get'],
   create: call('create') as ListApi['create'],

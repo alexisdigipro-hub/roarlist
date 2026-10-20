@@ -46,7 +46,8 @@ export type PrintLabels = Record<'scene' | 'shot' | 'frame' | 'size' | 'angle' |
 export type MenuCommand = 'new' | 'import' | 'export-pdf' | 'export-board' | 'export-html' | 'export-file' | 'add-scene' | 'add-shot'
 
 export interface ListApi {
-  platform: string
+  platform: string // darwin, win32… or 'web'
+  imageSrc(projectId: string, file: string): string | Promise<string>
   list(): Promise<ProjectSummary[]>
   get(id: string): Promise<Project | null>
   create(title: string): Promise<Project>
@@ -63,4 +64,3 @@ export interface ListApi {
   onOpened(cb: (p: Project) => void): () => void
 }
 
-export const imageUrl = (projectId: string, file: string) => `roarimg://p/${projectId}/${encodeURIComponent(file)}`

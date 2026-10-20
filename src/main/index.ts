@@ -29,11 +29,11 @@ function createWindow() {
   const mac = process.platform === 'darwin'
   win = new BrowserWindow({
     width: 1440, height: 900, minWidth: 980, minHeight: 600, show: false,
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#0b0b0c' : '#f3f0e8',
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1f2328' : '#eceef1',
     title: 'RoarList',
     ...(mac
       ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 16, y: 18 } }
-      : { titleBarStyle: 'hidden' as const, titleBarOverlay: { color: '#0b0b0c', symbolColor: '#f2f0ec', height: 40 } }),
+      : { titleBarStyle: 'hidden' as const, titleBarOverlay: { color: '#2a2f36', symbolColor: '#eef0f3', height: 40 } }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: true,
