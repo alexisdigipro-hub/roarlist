@@ -10,7 +10,7 @@ import { useSettings } from '../useSettings'
 import { authError } from './Auth'
 import { Icon } from './Icon'
 
-const VERSION = '0.4.0'
+const VERSION = '0.4.1'
 type Page = 'account' | 'general' | 'appearance' | 'language' | 'lists' | 'pdf' | 'keys'
 
 // [id, title, colour, icon, hero line, group]
