@@ -25,9 +25,11 @@ export type Ops = {
 
 type Toast = { text: string; undo?: boolean } | null
 
-const focusShot = (id: string) => requestAnimationFrame(() => {
-  const el = document.querySelector<HTMLElement>(`[data-shot="${id}"] textarea, [data-shot="${id}"] input:not([type=checkbox])`)
-  el?.focus()
+// after React has drawn the new row: its description field
+const later = (fn: () => void) => setTimeout(fn, 0)
+const focusShot = (id: string) => later(() => {
+  const row = document.querySelector(`[data-shot="${id}"]`)
+  ;(row?.querySelector<HTMLElement>('textarea') || row?.querySelector<HTMLElement>('input:not([type=checkbox])'))?.focus()
 })
 
 export default function App() {
@@ -87,7 +89,7 @@ export default function App() {
     setP(next)
     localStorage.setItem('last', next.id)
     await refresh()
-    requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.title')?.focus())
+    later(() => document.querySelector<HTMLInputElement>('.title')?.focus())
   }, [flush, refresh])
 
   const undo = useCallback(() => {
@@ -125,7 +127,7 @@ export default function App() {
       if (!cur.current) return
       const sc = M.newScene(M.nextSceneNumber(cur.current))
       put({ ...cur.current, scenes: [...cur.current.scenes, sc] }, true)
-      requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.scene:last-of-type .scene-heading')?.focus())
+      later(() => document.querySelector<HTMLInputElement>('.scene:last-of-type .scene-heading')?.focus())
     },
     removeShot: (id) => { edit((x) => M.removeShot(x, id), true); say(t.deleted, true) },
     removeScene: (id) => {
