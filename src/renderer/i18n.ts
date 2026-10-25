@@ -16,7 +16,8 @@ const el = {
   heading: 'π.χ. ΕΣΩΤ. ΚΟΥΖΙΝΑ - ΝΥΧΤΑ', descPh: 'Τι βλέπουμε', addShot: 'Πλάνο', addScene: 'Σκηνή',
   list: 'Λίστα', board: 'Storyboard', export: 'Εξαγωγή', pdfList: 'PDF λίστα', pdfBoard: 'PDF storyboard', html: 'Ιστοσελίδα (.html)',
   file: 'Αρχείο .roarlist', fileHint: 'Για να το ανοίξει άλλος στο RoarList',
-  duplicate: 'Αντίγραφο', remove: 'Διαγραφή', removeQ: 'Να πάει στον κάδο το shot list;', removeShotQ: 'Να διαγραφεί το πλάνο;', removeSceneQ: 'Να διαγραφεί η σκηνή με όλα τα πλάνα της;',
+  duplicate: 'Αντίγραφο', remove: 'Διαγραφή', removeQ: 'Να πάει στον κάδο το shot list;', removeQWeb: 'Να διαγραφεί οριστικά το shot list από τον λογαριασμό σου, με τα καρέ του;',
+  privacy: 'Πολιτική απορρήτου', terms: 'Όροι χρήσης', agreeA: 'Με τη δημιουργία λογαριασμού αποδέχεσαι τους', agreeB: 'και την', deleteAccount: 'Για διαγραφή λογαριασμού: RoarMe > Settings > Privacy and Security > Delete My Account.', removeShotQ: 'Να διαγραφεί το πλάνο;', removeSceneQ: 'Να διαγραφεί η σκηνή με όλα τα πλάνα της;',
   copyOf: 'Αντίγραφο του', addImage: 'Βάλε εικόνα', dropImage: 'Σύρε, επικόλλησε ή διάλεξε εικόνα', removeImage: 'Αφαίρεση εικόνας', replaceImage: 'Αλλαγή εικόνας',
   moveUp: 'Πάνω', moveDown: 'Κάτω', drag: 'Σύρε για αλλαγή σειράς', saved: 'Αποθηκεύτηκε', exported: 'Έτοιμο', empty: 'Φτιάξε το πρώτο σου shot list',
   emptySub: 'Σκηνές, πλάνα, κάδρα και storyboard, και ένα PDF για το συνεργείο.', start: 'Ξεκίνα', updateReady: 'Νέα έκδοση έτοιμη', restart: 'Επανεκκίνηση',
@@ -72,7 +73,8 @@ const en: typeof el = {
   heading: 'e.g. INT. KITCHEN - NIGHT', descPh: 'What we see', addShot: 'Shot', addScene: 'Scene',
   list: 'List', board: 'Storyboard', export: 'Export', pdfList: 'PDF list', pdfBoard: 'PDF storyboard', html: 'Web page (.html)',
   file: '.roarlist file', fileHint: 'For someone else to open in RoarList',
-  duplicate: 'Duplicate', remove: 'Delete', removeQ: 'Move this shot list to the trash?', removeShotQ: 'Delete this shot?', removeSceneQ: 'Delete this scene and all its shots?',
+  duplicate: 'Duplicate', remove: 'Delete', removeQ: 'Move this shot list to the trash?', removeQWeb: 'Delete this shot list and its frames from your account for good?',
+  privacy: 'Privacy Policy', terms: 'Terms', agreeA: 'By creating an account you agree to the', agreeB: 'and the', deleteAccount: 'To delete your account: RoarMe > Settings > Privacy and Security > Delete My Account.', removeShotQ: 'Delete this shot?', removeSceneQ: 'Delete this scene and all its shots?',
   copyOf: 'Copy of', addImage: 'Add image', dropImage: 'Drop, paste or choose an image', removeImage: 'Remove image', replaceImage: 'Replace image',
   moveUp: 'Up', moveDown: 'Down', drag: 'Drag to reorder', saved: 'Saved', exported: 'Done', empty: 'Make your first shot list',
   emptySub: 'Scenes, shots, frames and a storyboard, plus a PDF for the crew.', start: 'Start', updateReady: 'New version ready', restart: 'Restart',
@@ -124,6 +126,8 @@ const en: typeof el = {
 const chosen = settings().language
 export const lang = chosen !== 'system' ? chosen : (navigator.language || 'en').toLowerCase().startsWith('el') ? 'el' : 'en'
 export const t = lang === 'el' ? el : en
+// Privacy Policy and Terms (Alex, 25 Oct): on the company site, both on one page
+export const LEGAL = `https://themadlions.com/legal/roarlist/${lang === 'el' ? '?lang=el' : ''}`
 export const val = (k: string) => (k ? t.values[k] || k : '')
 
 export const printLabels = (): PrintLabels => ({
