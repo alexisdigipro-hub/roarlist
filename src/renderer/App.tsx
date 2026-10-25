@@ -304,7 +304,7 @@ export default function App() {
     await refresh(); open(n.id)
   }
   const removeList = async (id: string) => {
-    if (!confirm(t.removeQ)) return
+    if (!confirm(isWeb && !isDemo ? t.removeQWeb : t.removeQ)) return
     if (cur.current?.id === id) { clearTimeout(timer.current); dirty.current = false; cur.current = null; setP(null) }
     await api.remove(id); await refresh()
   }

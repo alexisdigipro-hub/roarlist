@@ -3,14 +3,14 @@
 import { useState } from 'react'
 import { isWeb } from '../api'
 import { sb, user } from '../cloud'
-import { ASPECTS, t } from '../i18n'
+import { ASPECTS, LEGAL, t } from '../i18n'
 import { ACCENTS, COLUMNS, FONTS, THEMES, TEXT_SIZES, revealFrom, set, type Settings } from '../settings'
 import { Lens } from '../ui'
 import { useSettings } from '../useSettings'
 import { authError } from './Auth'
 import { Icon } from './Icon'
 
-const VERSION = '0.4.1'
+const VERSION = '0.4.2'
 type Page = 'account' | 'general' | 'appearance' | 'language' | 'lists' | 'pdf' | 'keys'
 
 // [id, title, colour, icon, hero line, group]
@@ -40,7 +40,7 @@ export function SettingsSheet({ onClose, start = 'appearance' }: { onClose: () =
               <button key={k} className={page === k ? 'on' : ''} onClick={() => setPage(k)}><Icon name={icon} size={17} />{label}</button>,
             ])}
           </Lens>
-          <div className="set-version"><div className="brand"><b>ROAR</b><i>LIST</i></div>by THEMADLIONS · {VERSION}{isWeb ? ' web' : ''}</div>
+          <div className="set-version"><div className="brand"><b>ROAR</b><i>LIST</i></div>by THEMADLIONS · {VERSION}{isWeb ? ' web' : ''}<div className="set-legal"><a href={`${LEGAL}#privacy`} target="_blank" rel="noreferrer">{t.privacy}</a> · <a href={`${LEGAL}#terms`} target="_blank" rel="noreferrer">{t.terms}</a></div></div>
         </div>
         <div className="set-body">
           <button className="tool set-close" title={t.close} onClick={onClose}><Icon name="close" size={18} /></button>
@@ -232,7 +232,8 @@ function Account() {
   const u = user()
   const [pw, setPw] = useState('')
   const [msg, setMsg] = useState('')
-  if (!isWeb || !u) return <Box note={t.localNote}><Row label={t.account} hint={t.desktopAccount} /></Box>
+  const legal = <p className="set-note set-legal"><a href={`${LEGAL}#privacy`} target="_blank" rel="noreferrer">{t.privacy}</a> · <a href={`${LEGAL}#terms`} target="_blank" rel="noreferrer">{t.terms}</a>{isWeb && u ? ` · ${t.deleteAccount}` : ''}</p>
+  if (!isWeb || !u) return <><Box note={t.localNote}><Row label={t.account} hint={t.desktopAccount} /></Box>{legal}</>
   const name = (u.user_metadata as any)?.name
   return (
     <>
@@ -254,6 +255,7 @@ function Account() {
       <Box>
         <button className="set-row danger-row" onClick={() => sb.auth.signOut()}><Icon name="close" size={16} />{t.signOut}</button>
       </Box>
+      {legal}
     </>
   )
 }

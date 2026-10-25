@@ -226,3 +226,7 @@ html[data-lite] *, html[data-lite] *::before, html[data-lite] *::after { animati
 .side-empty { padding: 10px 12px; }
 .demo-note { display: flex; flex-direction: column; gap: 2px; margin: 8px 4px 6px; padding: 10px 12px; border-radius: var(--r); background: var(--lit); box-shadow: inset 0 0 0 1px var(--lit-edge), var(--halo); color: var(--text); text-decoration: none; font-size: 12.5px; }
 .demo-note b { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-2); }
+/* Privacy Policy and Terms links (Alex, 25 Oct) */
+.set-legal { margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.set-legal a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.set-legal a:hover { color: var(--text); }

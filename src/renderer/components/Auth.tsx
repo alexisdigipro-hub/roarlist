@@ -1,7 +1,7 @@
 // Sign in with a RoarMe account (the same one as RoarMe, Roardino and RoarMail), make one, or ask for a new password.
 import { useState } from 'react'
 import { appUrl, sb } from '../cloud'
-import { t } from '../i18n'
+import { LEGAL, t } from '../i18n'
 
 const ERRORS: [RegExp, keyof typeof t][] = [
   [/invalid login/i, 'err_login'], [/not confirmed/i, 'err_confirm'], [/already registered|already exists/i, 'err_exists'],
@@ -71,6 +71,7 @@ export function Auth() {
         {!up && <button className="link center" type="button" onClick={forgot}>{t.forgot}</button>}
         {msg.text && <p className={`msg ${msg.kind}`}>{msg.text}</p>}
         <p className="hint">{t.sameAccount}</p>
+        {up && <p className="hint set-legal">{t.agreeA} <a href={`${LEGAL}#terms`} target="_blank" rel="noreferrer">{t.terms}</a> {t.agreeB} <a href={`${LEGAL}#privacy`} target="_blank" rel="noreferrer">{t.privacy}</a>.</p>}
       </form>
     </div>
   )
