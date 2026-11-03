@@ -8,9 +8,9 @@ import { api, isDemo, isWeb } from './api'
 import { Board } from './components/Board'
 import { Icon } from './components/Icon'
 import { Img } from './components/Img'
-import { Auth, NewPassword } from './components/Auth'
+import { Auth, Mfa, NewPassword } from './components/Auth'
 import { SettingsSheet } from './components/SettingsSheet'
-import { currentSession, onAuth, uid } from './cloud'
+import { currentSession, needsMfa, onAuth, uid } from './cloud'
 import * as S from './settings'
 import { Lens } from './ui'
 import { importLegacy, loadAccountSettings, saveAccountSettings } from './web-api'
@@ -52,6 +52,7 @@ export default function App() {
   const [sideW, setSideW] = useState(() => { try { return Number(localStorage.getItem('roarlist-side')) || 270 } catch { return 270 } })
   const [authed, setAuthed] = useState<boolean | null>(null)
   const [recovery, setRecovery] = useState(false)
+  const [mfa, setMfa] = useState(false)
   const [toast, setToast] = useState<Toast>(null)
   const [update, setUpdate] = useState<{ status: string; version: string } | null>(null)
   const cur = useRef<Project | null>(null)
@@ -207,6 +208,11 @@ export default function App() {
     const signedIn = async () => {
       if (who === uid()) return
       who = uid()
+      // two-step verification first, if the account has it; the verified session comes back here through onAuth
+      let mfaNeeded = false
+      try { mfaNeeded = await needsMfa() } catch { /* RLS will say if it is missing */ }
+      if (mfaNeeded) { who = ''; setMfa(true); return }
+      setMfa(false)
       setAuthed(true)
       try {
         const remote = await loadAccountSettings()
@@ -222,11 +228,12 @@ export default function App() {
     return onAuth((s, event) => {
       if (event === 'PASSWORD_RECOVERY') setRecovery(true)
       if (s) signedIn()
-      else if (who) {
+      else if (!who) { setMfa(false); setAuthed(false) }
+      else {
         who = ''
         S.onChange(null)
         clearTimeout(timer.current); dirty.current = false; cur.current = null
-        setP(null); setLists(null); setAuthed(false); setSettings(false)
+        setP(null); setLists(null); setAuthed(false); setSettings(false); setMfa(false)
       }
     })
   }, [start])
@@ -309,6 +316,7 @@ export default function App() {
     await api.remove(id); await refresh()
   }
 
+  if (isWeb && mfa) return <Mfa />
   if (isWeb && authed === false) return <Auth />
   if (!lists) return <div className="boot"><div className="spinner" /></div>
 

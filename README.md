@@ -5,6 +5,7 @@ Shot lists and storyboards for shoots, for Mac and Windows, in the THEMADLIONS l
 - Scenes and shots: size, angle, movement, lens, description, cast, duration, notes, a tick when it is shot.
 - A frame per shot (reference still or sketch): drop, paste or choose an image. List view and storyboard view.
 - Export: PDF list, PDF storyboard (A4 landscape), a self-contained web page, or a `.roarlist` file someone else opens in RoarList.
+- On the web: sign in with your Roar Account (one sign-in for every Roar app, allowed in the browser at themadlions.com/account) or with email and password; two-step verification asks for the authenticator's code.
 - Everything stays on this computer (`<userData>/projects/<id>/project.json` + `images/`). No account, no server.
 
 ## Layout
