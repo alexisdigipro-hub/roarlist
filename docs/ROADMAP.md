@@ -10,6 +10,11 @@ desktop for Mac and Windows from this repo's releases. Listed on themadlions.com
 - Web: RoarMe account (same as RoarMe, Roardino, RoarMail), lists in RoarMe's Supabase (`supabase/roarlist.sql`:
   roarlist_projects, roarlist_settings, private bucket roarlist-images; RLS checked: only the owner reads or writes).
   Lists made in a browser before accounts move into the account on first sign-in.
+- Sign in with Roar Account (3 Nov 2026): the main button on the sign-in screen. RoarList asks the Edge Function
+  `roar-connect` for a code, opens themadlions.com/account/?connect=CODE, polls every 2 s (10 min at most) and turns the
+  one-time token into its own session (`verifyOtp` magiclink; src/renderer/cloud.ts, components/Auth.tsx RoarConnect).
+  Email and password stay below it. Two-step verification: after any sign-in, an account with an authenticator is asked
+  for its 6-digit code (components/Auth.tsx Mfa, App.tsx checks the assurance level).
 - RoarMe's design system: Simba and Pumba, dark/light/auto with the circle wipe, accent, font, text size, spacing,
   corners, glass buttons, animations, focus rings, power saving; RoarMe-style Settings; Cmd K search, Cmd , settings,
   Cmd / shortcuts, right-click menu, resizable side panel.
