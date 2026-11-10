@@ -19,6 +19,7 @@ desktop for Mac and Windows from this repo's releases. Listed on themadlions.com
   corners, glass buttons, animations, focus rings, power saving; RoarMe-style Settings; Cmd K search, Cmd , settings,
   Cmd / shortcuts, right-click menu, resizable side panel.
 - Desktop: same screens, lists kept on the computer (no account yet).
+- 0.4.4: new icon (the Lab's one family of icons, 10 Nov 2026).
 
 ## Open decisions (waiting for Alex)
 1. Which ways to connect RoarList with RoarMe to build first:
